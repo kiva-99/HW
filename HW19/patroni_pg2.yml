@@ -1,0 +1,54 @@
+scope: postgresql-hw19
+namespace: /db/
+name: pg2
+
+restapi:
+  listen: 192.168.100.102:8008
+  connect_address: 192.168.100.102:8008
+
+etcd3:
+  hosts: ["192.168.100.101:2379"]
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+  pg_hba:
+    - host replication replicator 192.168.100.101/32 trust
+    - host all all 192.168.100.0/24 trust
+    - local all all trust
+
+postgresql:
+  listen: 192.168.100.102:5432
+  connect_address: 192.168.100.102:5432
+  data_dir: /home/roman/pg_data
+  bin_dir: /usr/lib/postgresql/16/bin
+  authentication:
+    replication:
+      username: replicator
+      password: rep-pass
+    superuser:
+      username: postgres
+      password: postgres
+  parameters:
+    unix_socket_directories: '/tmp'
+    external_pid_file: '/tmp/pg.pid'
+    listen_addresses: '192.168.100.102'   # ← для pg2
+    port: 5432
+    wal_level: replica
+    hot_standby: on
+    max_wal_senders: 10
+    wal_keep_size: 128MB
+    max_replication_slots: 10
+    wal_log_hints: on
+    logging_collector: on
+    log_directory: 'log'
+    log_filename: 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_statement: 'none'
