@@ -1,0 +1,9 @@
+---
+- name: Проверка работы Ansible на Patroni-нодах
+  hosts: patroni_nodes
+  tasks:
+    - name: Создать файл-метку от Ansible
+      ansible.builtin.file:
+        path: /tmp/ansible_hw20_test.txt
+        state: touch
+
