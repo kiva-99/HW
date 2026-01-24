@@ -1,0 +1,6 @@
+---
+- name: Установка и обновление Nginx и htop на Patroni-нодах
+  hosts: patroni_nodes
+  roles:
+    - nginx
+    - htop

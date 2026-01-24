@@ -1,0 +1,7 @@
+---
+- name: Установить или обновить Nginx
+  apt:
+    name: nginx
+    state: latest
+    update_cache: yes
+  become: yes
