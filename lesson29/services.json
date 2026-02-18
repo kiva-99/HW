@@ -1,0 +1,7 @@
+{
+  "services": [
+    {"name": "BITS"},
+    {"name": "Spooler"},
+    {"name": "W32Time"}
+  ]
+}
