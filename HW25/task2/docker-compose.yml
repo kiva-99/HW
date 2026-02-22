@@ -9,6 +9,13 @@
     volumes:
       - pg:/var/lib/postgresql/data
     restart: always
+    # КОРРЕКТНЫЙ healthcheck: явно указываем БД через -d hw25db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roman -d hw25db"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   web:
     image: nginx:alpine
@@ -16,11 +23,19 @@
     ports:
       - "8081:80"
     volumes:
-      - ./html:/usr/share/nginx/html
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./html:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - db
+      db:
+        condition: service_healthy  # ← КЛЮЧЕВАЯ СТРОКА: ждём готовности БД
     restart: always
+    # Healthcheck для веб-сервера
+    healthcheck:
+      test: ["CMD", "pgrep", "nginx"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 volumes:
   pg:
