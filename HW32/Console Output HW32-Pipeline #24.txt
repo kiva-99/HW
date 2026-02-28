@@ -1,0 +1,306 @@
+Started by user Иванов Кирилл Константинович
+
+Obtained Jenkinsfile from git https://github.com/kiva-99/pipeline.git
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on docker-builder
+ in /home/jenkins/workspace/HW32-Pipeline
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Avoid second fetch
+Checking out Revision a72019bab64be50873c698c7226682667388d9a3 (refs/remotes/origin/main)
+Commit message: "fix: исправлен URL репозитория и параметр HW_BRANCH"
+Cloning repository https://github.com/kiva-99/pipeline.git
+ > git init /home/jenkins/workspace/HW32-Pipeline # timeout=10
+Fetching upstream changes from https://github.com/kiva-99/pipeline.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.52.0'
+ > git fetch --tags --force --progress -- https://github.com/kiva-99/pipeline.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config remote.origin.url https://github.com/kiva-99/pipeline.git # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f a72019bab64be50873c698c7226682667388d9a3 # timeout=10
+ > git rev-list --no-walk 14131b853b1eed9748f72031676420e89e158977 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout Application)
+[Pipeline] echo
+🔄 Клонируем репозиторий приложения: https://github.com/kiva-99/HW.git (ветка: main)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ rm -rf src-app
++ git clone -b main https://github.com/kiva-99/HW.git src-app
+Cloning into 'src-app'...
++ cd src-app
++ git log -1 --oneline
+063398f HW29: OOP practice (Circle, Bank, Student, Book, Car)
++ echo '✅ Приложение клонировано из ветки main в папку src-app'
+✅ Приложение клонировано из ветки main в папку src-app
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Application)
+[Pipeline] echo
+🔨 Сборка приложения hw32-webapp v24
+[Pipeline] script
+[Pipeline] {
+[Pipeline] fileExists
+[Pipeline] sh
++ echo '=== Сборка Docker образа ==='
+=== Сборка Docker образа ===
++ cd src-app/hw24
++ docker build -t hw32-webapp:24 .
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  176.1kB
+
+Step 1/6 : FROM nginx:alpine
+ ---> 7d7a15b8a280
+Step 2/6 : LABEL maintainer="roman"       hw="HW-24"       description="Custom Nginx image with persistent volumes"
+ ---> Using cache
+ ---> 19de6611cb8d
+Step 3/6 : COPY index.html /usr/share/nginx/html/index.html
+ ---> Using cache
+ ---> 59df6ba7140f
+Step 4/6 : RUN echo "Этот файл СОЗДАН ПРИ СБОРКЕ образа (внутри образа)" > /usr/share/nginx/html/build-marker.txt
+ ---> Using cache
+ ---> 975ae520798e
+Step 5/6 : ENV APP_ENV=production     APP_NAME="hw24-nginx"
+ ---> Using cache
+ ---> ae4300c27dfa
+Step 6/6 : EXPOSE 80
+ ---> Using cache
+ ---> 43b4be7f7b05
+Successfully built 43b4be7f7b05
+Successfully tagged hw32-webapp:24
++ echo '✓ Образ собран: hw32-webapp:24'
+✓ Образ собран: hw32-webapp:24
++ + grep hw32-webapp
+docker images
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+hw32-webapp:10                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:15                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:16                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:17                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:20                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:21                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:22                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:23                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:24                               43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:3                                43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:7                                43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:8                                43b4be7f7b05       92.3MB         25.9MB   U    
+hw32-webapp:9                                43b4be7f7b05       92.3MB         25.9MB   U    
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Run Tests)
+[Pipeline] echo
+🧪 Запуск автоматических тестов
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ echo '=== Установка зависимостей ==='
+=== Установка зависимостей ===
++ pip3 install pytest --user
++ true
++ echo '=== Запуск pytest ==='
+=== Запуск pytest ===
++ cd src-app
++ '[' -d tests ]
++ echo '⚠ Папка tests/ не найдена в репозитории приложения'
+⚠ Папка tests/ не найдена в репозитории приложения
+[Pipeline] }
+[Pipeline] // script
+Post stage
+[Pipeline] junit
+Recording test results
+None of the test reports contained any result
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+No test report files were found. Configuration error?
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Cleanup Old Containers)
+[Pipeline] echo
+🧹 Очистка старых контейнеров
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ echo '=== Поиск и удаление старых контейнеров ==='
+=== Поиск и удаление старых контейнеров ===
++ docker ps -a --filter 'name=hw32-webapp' --format '{{.ID}}'
++ xargs -r docker rm -f
+a93087d25239
++ echo '✓ Очистка завершена'
+✓ Очистка завершена
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Application)
+[Pipeline] echo
+🚀 Деплой приложения в окружение: dev
+[Pipeline] script
+[Pipeline] {
+[Pipeline] load
+[Pipeline] { (groovy-scripts/deploy-app.groovy)
+[Pipeline] }
+[Pipeline] // load
+[Pipeline] echo
+🚀 Деплой: hw32-webapp:24 → hw32-webapp-dev (порт 8090, env: dev)
+[Pipeline] echo
+🔄 Остановка существующего контейнера...
+[Pipeline] sh
++ docker stop hw32-webapp-dev
++ true
+[Pipeline] sh
++ docker rm hw32-webapp-dev
++ true
+[Pipeline] echo
+▶️  Запуск нового контейнера...
+[Pipeline] sh
++ docker run -d --name hw32-webapp-dev --restart unless-stopped -p 8090:80 -e 'APP_ENV=dev' -e 'BUILD_NUMBER=24' hw32-webapp:24
+a7a629996dc6d5f9043d32fd607a1b1fde2bcc0e3f06769fab1ef92ce379e67a
+[Pipeline] echo
+✅ Проверка статуса контейнера...
+[Pipeline] sh
++ docker ps --filter 'name=hw32-webapp-dev' --format '{{.Status}}'
++ grep -q Up
+[Pipeline] echo
+✓ Деплой завершён успешно!
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Health Check)
+[Pipeline] echo
+🏥 Проверка доступности приложения
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ echo '=== Проверка здоровья контейнера hw32-webapp-dev ==='
+=== Проверка здоровья контейнера hw32-webapp-dev ===
++ docker ps --format '{{.Names}}'
++ grep -x hw32-webapp-dev
++ RUNNING=hw32-webapp-dev
++ '[' -z hw32-webapp-dev ]
++ echo '✓ Контейнер запущен.'
+✓ Контейнер запущен.
++ MAX_RETRIES=10
++ RETRY_COUNT=0
++ '[' 0 -lt 10 ]
++ docker exec hw32-webapp-dev curl -sf http://localhost:80/
++ echo '✅ Приложение внутри контейнера доступно (HTTP 200 OK)!'
+✅ Приложение внутри контейнера доступно (HTTP 200 OK)!
++ docker exec hw32-webapp-dev curl -s http://localhost:80/
++ head -n 5
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>HW-24</title>
++ exit 0
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Report)
+[Pipeline] echo
+📊 Генерация отчёта о сборке
+[Pipeline] script
+[Pipeline] {
+[Pipeline] load
+[Pipeline] { (dsl-scripts/report-generator.groovy)
+[Pipeline] }
+[Pipeline] // load
+[Pipeline] echo
+📊 Генерация отчёта: summary для HW32-Pipeline #24
+[Pipeline] sh
++ mkdir -p reports
+[Pipeline] writeFile
+[Pipeline] echo
+✅ Отчёт сохранён: reports/build-24.json
+[Pipeline] echo
+📋 Сводка:
+[Pipeline] echo
+   • Статус: SUCCESS
+[Pipeline] echo
+   • Окружение: dev
+[Pipeline] echo
+   • Порт: 8090
+[Pipeline] echo
+📄 Содержимое отчёта:
+[Pipeline] sh
++ cat reports/build-24.json
+{
+  "job": "HW32-Pipeline",
+  "build_number": 24,
+  "status": "SUCCESS",
+  "environment": "dev",
+  "timestamp": "2026-02-28 17:15:14",
+  "duration": "N/A",
+  "artifacts": {
+    "docker_image": "hw32-webapp:24",
+    "port": 8090
+  },
+  "checks": {
+    "checkout": "OK",
+    "build": "OK",
+    "deploy": "OK",
+    "health_check": "OK"
+  }
+}
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+📦 Архивация артефактов...
+[Pipeline] archiveArtifacts
+Archiving artifacts
+Recording fingerprints
+[Pipeline] echo
+🧹 Очистка рабочего пространства
+[Pipeline] cleanWs
+[WS-CLEANUP] Deleting project workspace...
+[WS-CLEANUP] Deferred wipeout is used...
+[WS-CLEANUP] done
+[Pipeline] echo
+✅ Сборка успешна!
+[Pipeline] emailext
+Sending email to: k.ivanovconn@gmail.com
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
