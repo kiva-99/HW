@@ -1,0 +1,150 @@
+// Jenkinsfile — CI/CD Pipeline для report-service
+// Автор: Иванов Кирилл Константинович
+// Порт: 8081 (согласно ТЗ)
+
+pipeline {
+    agent any
+
+    parameters {
+        booleanParam(
+            name: 'ROLLBACK_ONLY',
+            defaultValue: false,
+            description: 'Если включено — выполнить только rollback'
+        )
+    }
+
+    environment {
+        APP_NAME = 'report-service'
+        CONTAINER_NAME = 'report-service'
+        CONTAINER_PORT = '8081'
+        APP_INTERNAL_PORT = '5000'
+        IMAGE_TAG = "${APP_NAME}:${env.BUILD_NUMBER}"
+        LAST_SUCCESSFUL_FILE = 'last_successful_build.txt'
+    }
+
+    stages {
+        stage('Test') {
+            when { expression { params.ROLLBACK_ONLY == false } }
+            steps {
+                dir('report-service') {
+                    echo "🧪 Запуск тестов"
+                    sh '''
+                        echo "=== Установка зависимостей ==="
+                        python3 -m pip install --user --break-system-packages -r requirements.txt
+                        echo "=== Запуск pytest ==="
+                        python3 -m pytest test_app.py -v --tb=short
+                        echo "✅ Тесты пройдены"
+                    '''
+                }
+            }
+        }
+
+        stage('Build') {
+            when { expression { params.ROLLBACK_ONLY == false } }
+            steps {
+                dir('report-service') {
+                    echo "🔨 Сборка Docker образа: ${env.IMAGE_TAG}"
+                    sh '''
+                        docker build -t ${IMAGE_TAG} .
+                        echo "✓ Образ собран: ${IMAGE_TAG}"
+                        docker images | grep ${APP_NAME}
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when { expression { params.ROLLBACK_ONLY == false } }
+            steps {
+                echo "🚀 Деплой на порт ${CONTAINER_PORT}"
+                sh '''
+                    docker stop ${CONTAINER_NAME} 2>/dev/null || true
+                    docker rm ${CONTAINER_NAME} 2>/dev/null || true
+                    docker run -d \
+                        -p ${CONTAINER_PORT}:${APP_INTERNAL_PORT} \
+                        --name ${CONTAINER_NAME} \
+                        ${IMAGE_TAG}
+                    echo "✓ Контейнер запущен"
+                    sleep 3
+                '''
+            }
+        }
+
+        stage('Health Check') {
+            when { expression { params.ROLLBACK_ONLY == false } }
+            steps {
+                echo "🏥 Проверка доступности"
+                script {
+                    try {
+                        sh '''
+                            for i in {1..10}; do
+                                if curl -sf http://localhost:${CONTAINER_PORT}/health > /dev/null 2>&1; then
+                                    echo "✅ Приложение доступно!"
+                                    curl -s http://localhost:${CONTAINER_PORT}/health
+                                    exit 0
+                                fi
+                                echo "⏳ Попытка $i/10..."
+                                sleep 2
+                            done
+                            echo "❌ Health check failed"
+                            exit 1
+                        '''
+                        sh "echo ${env.BUILD_NUMBER} > ${LAST_SUCCESSFUL_FILE}"
+                        echo "✅ Build ${env.BUILD_NUMBER} сохранён"
+                    } catch (Exception e) {
+                        echo "❌ Health check failed: ${e.message}"
+                        throw e
+                    }
+                }
+            }
+            post {
+                failure {
+                    echo "🔄 Автоматический rollback..."
+                    script {
+                        if (fileExists(env.LAST_SUCCESSFUL_FILE)) {
+                            def lastBuild = readFile(env.LAST_SUCCESSFUL_FILE).trim()
+                            def lastImage = "${APP_NAME}:${lastBuild}"
+                            echo "🔄 Откат к: ${lastImage}"
+                            sh """
+                                docker stop ${CONTAINER_NAME} 2>/dev/null || true
+                                docker rm ${CONTAINER_NAME} 2>/dev/null || true
+                                if docker images | grep -q '${lastImage}'; then
+                                    docker run -d -p ${CONTAINER_PORT}:${APP_INTERNAL_PORT} --name ${CONTAINER_NAME} ${lastImage}
+                                    echo "✓ Rollback completed"
+                                fi
+                            """
+                        }
+                    }
+                    error "Pipeline FAILED"
+                }
+            }
+        }
+
+        stage('Rollback') {
+            when { expression { params.ROLLBACK_ONLY == true } }
+            steps {
+                echo "🔄 Режим ROLLBACK_ONLY"
+                script {
+                    if (fileExists(env.LAST_SUCCESSFUL_FILE)) {
+                        def lastBuild = readFile(env.LAST_SUCCESSFUL_FILE).trim()
+                        def lastImage = "${APP_NAME}:${lastBuild}"
+                        sh """
+                            docker stop ${CONTAINER_NAME} 2>/dev/null || true
+                            docker rm ${CONTAINER_NAME} 2>/dev/null || true
+                            docker run -d -p ${CONTAINER_PORT}:${APP_INTERNAL_PORT} --name ${CONTAINER_NAME} ${lastImage}
+                        """
+                        echo "✓ Rollback completed: ${lastImage}"
+                    } else {
+                        error "Rollback failed: нет ${LAST_SUCCESSFUL_FILE}"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always { echo "🧹 Cleanup..." }
+        success { echo "✅ Pipeline SUCCESS" }
+        failure { echo "❌ Pipeline FAILED" }
+    }
+}
