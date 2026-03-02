@@ -1,7 +1,7 @@
 // Jenkinsfile — CI/CD Pipeline для report-service
 // Автор: Иванов Кирилл Константинович
 // Порт: 8082 (т.к. 8080/8081/8090 заняты)
-// Тесты запускаются в Docker-контейере для изоляции окружения
+// Структура: файлы в DevOps/report-service/
 pipeline {
 agent any
 parameters {
@@ -18,31 +18,19 @@ CONTAINER_PORT = '8082'          // 👈 Ваш порт
 APP_INTERNAL_PORT = '5000'
 IMAGE_TAG = "${APP_NAME}:${env.BUILD_NUMBER}"
 LAST_SUCCESSFUL_FILE = 'last_successful_build.txt'
-TEST_IMAGE = "${APP_NAME}-test:${env.BUILD_NUMBER}"
 }
 stages {
-// 🔹 Stage 1: Test (в Docker-контейере)
+// 🔹 Stage 1: Test
 stage('Test') {
 when { expression { params.ROLLBACK_ONLY == false } }
 steps {
 dir('DevOps/report-service') {
-echo "🧪 Запуск тестов в Docker"
+echo "🧪 Запуск тестов"
 sh '''
-echo "=== Сборка тестового образа ==="
-docker build -t ${TEST_IMAGE} -f Dockerfile.test . || {
-# Если Dockerfile.test нет — создаём на лету
-cat > Dockerfile.test << 'EOF'
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt pytest
-COPY . .
-CMD ["pytest", "test_app.py", "-v", "--tb=short"]
-EOF
-docker build -t ${TEST_IMAGE} -f Dockerfile.test .
-}
+echo "=== Установка зависимостей ==="
+python3 -m pip install --user --break-system-packages -r requirements.txt
 echo "=== Запуск pytest ==="
-docker run --rm ${TEST_IMAGE}
+python3 -m pytest test_app.py -v --tb=short
 echo "✅ Тесты пройдены"
 '''
 }
@@ -68,10 +56,8 @@ when { expression { params.ROLLBACK_ONLY == false } }
 steps {
 echo "🚀 Деплой на порт ${CONTAINER_PORT}"
 sh '''
-echo "=== Остановка старого контейнера ==="
 docker stop ${CONTAINER_NAME} 2>/dev/null || true
 docker rm ${CONTAINER_NAME} 2>/dev/null || true
-echo "=== Запуск нового контейнера ==="
 docker run -d \
 -p ${CONTAINER_PORT}:${APP_INTERNAL_PORT} \
 --name ${CONTAINER_NAME} \
@@ -173,7 +159,6 @@ error "Rollback failed: файл ${LAST_SUCCESSFUL_FILE} не найден"
 post {
 always {
 echo "🧹 Cleanup..."
-sh "docker rmi ${TEST_IMAGE} 2>/dev/null || true"
 }
 success { echo "✅ Pipeline SUCCESS" }
 failure { echo "❌ Pipeline FAILED" }
