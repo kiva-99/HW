@@ -1,7 +1,7 @@
 // Jenkinsfile — CI/CD Pipeline для report-service
 // Автор: Иванов Кирилл Константинович
 // Порт: 8082 (т.к. 8080/8081/8090 заняты)
-// Структура: файлы в DevOps/report-service/
+// Порядок: Test → Build → Deploy → Health (каждый только если предыдущий OK)
 pipeline {
 agent any
 parameters {
@@ -20,11 +20,15 @@ IMAGE_TAG = "${APP_NAME}:${env.BUILD_NUMBER}"
 LAST_SUCCESSFUL_FILE = 'last_successful_build.txt'
 }
 stages {
-// 🔹 Stage 1: Test
+// 🔹 Stage 1: Test (запускается только если ROLLBACK_ONLY=false)
 stage('Test') {
-when { expression { params.ROLLBACK_ONLY == false } }
+when {
+allOf {
+expression { params.ROLLBACK_ONLY == false }
+expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+}
+}
 steps {
-dir('DevOps/report-service') {
 echo "🧪 Запуск тестов"
 sh '''
 echo "=== Установка зависимостей ==="
@@ -35,12 +39,15 @@ echo "✅ Тесты пройдены"
 '''
 }
 }
-}
-// 🔹 Stage 2: Build Docker Image
+// 🔹 Stage 2: Build (только если Test успешен)
 stage('Build') {
-when { expression { params.ROLLBACK_ONLY == false } }
+when {
+allOf {
+expression { params.ROLLBACK_ONLY == false }
+expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+}
+}
 steps {
-dir('DevOps/report-service') {
 echo "🔨 Сборка Docker образа: ${env.IMAGE_TAG}"
 sh '''
 docker build -t ${IMAGE_TAG} .
@@ -49,10 +56,14 @@ docker images | grep ${APP_NAME}
 '''
 }
 }
-}
-// 🔹 Stage 3: Deploy
+// 🔹 Stage 3: Deploy (только если Build успешен)
 stage('Deploy') {
-when { expression { params.ROLLBACK_ONLY == false } }
+when {
+allOf {
+expression { params.ROLLBACK_ONLY == false }
+expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+}
+}
 steps {
 echo "🚀 Деплой на порт ${CONTAINER_PORT}"
 sh '''
@@ -67,9 +78,14 @@ sleep 3
 '''
 }
 }
-// 🔹 Stage 4: Health Check
+// 🔹 Stage 4: Health Check (только если Deploy успешен)
 stage('Health Check') {
-when { expression { params.ROLLBACK_ONLY == false } }
+when {
+allOf {
+expression { params.ROLLBACK_ONLY == false }
+expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+}
+}
 steps {
 echo "🏥 Проверка доступности на порту ${CONTAINER_PORT}"
 script {
@@ -125,7 +141,7 @@ error "Pipeline FAILED: health-check не пройден"
 }
 }
 }
-// 🔹 Rollback Only Mode
+// 🔹 Rollback Only Mode (запускается независимо)
 stage('Rollback') {
 when { expression { params.ROLLBACK_ONLY == true } }
 steps {
