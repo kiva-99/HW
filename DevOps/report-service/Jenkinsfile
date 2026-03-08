@@ -1,11 +1,12 @@
 // Jenkinsfile — CI/CD Pipeline для report-service
 // Автор: Иванов Кирилл Константинович
-// Агент: docker-builder (имеет Python+pip+venv И доступ к Docker хоста)
+// Агент: docker-builder (Python+pip+venv + доступ к Docker хоста)
 // Порт: 8082
+// Health check: через docker exec внутрь контейнера (curl/wget на агенте нет,
+//               а localhost агента ≠ localhost хоста Windows)
 
 pipeline {
 
-    // docker-builder — единственный агент у которого есть и Python, и Docker
     agent { label 'docker-builder' }
 
     parameters {
@@ -29,13 +30,9 @@ pipeline {
 
         // ══════════════════════════════════════════════════════
         // Stage 1: Test
-        // Запускаем pytest через venv прямо на агенте docker-builder
-        //
-        // Почему venv, а не Docker-контейнер для тестов?
-        //   - На docker-builder уже есть python3 + pip + venv
-        //   - venv изолирует зависимости без лишних образов
-        //   - Быстрее: не нужно собирать/скачивать тестовый образ
-        //   - Чище: после тестов просто удаляем папку venv
+        // Запускаем pytest через venv прямо на агенте docker-builder.
+        // venv изолирует зависимости: не трогаем системный Python,
+        // не нужен sudo, работает на любом агенте где есть python3.
         // ══════════════════════════════════════════════════════
         stage('Test') {
             when {
@@ -48,7 +45,7 @@ pipeline {
                         echo "=== Создаём виртуальное окружение ==="
                         python3 -m venv venv
 
-                        echo "=== Устанавливаем зависимости из requirements.txt + pytest ==="
+                        echo "=== Устанавливаем зависимости ==="
                         venv/bin/pip install --quiet --upgrade pip
                         venv/bin/pip install --quiet -r requirements.txt pytest
 
@@ -66,8 +63,8 @@ pipeline {
 
         // ══════════════════════════════════════════════════════
         // Stage 2: Build
-        // Собираем Docker образ с тегом report-service:BUILD_NUMBER
-        // docker-builder видит Docker хоста через проброшенный сокет
+        // Собираем Docker образ с тегом report-service:BUILD_NUMBER.
+        // docker-builder видит Docker хоста через проброшенный сокет.
         // ══════════════════════════════════════════════════════
         stage('Build') {
             when {
@@ -80,8 +77,9 @@ pipeline {
                         docker build -t ${IMAGE_TAG} .
                         echo "✓ Образ собран: ${IMAGE_TAG}"
 
-                        # --format нужен потому что Docker Desktop (Windows)
-                        # выдаёт нестандартные колонки — grep на обычном выводе ненадёжен
+                        # --format нужен из-за Docker Desktop (Windows):
+                        # стандартный вывод docker images содержит лишние колонки,
+                        # grep по нему ненадёжен
                         docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}" \
                             | grep ${APP_NAME} || true
                     '''
@@ -91,8 +89,8 @@ pipeline {
 
         // ══════════════════════════════════════════════════════
         // Stage 3: Deploy
-        // Останавливаем старый контейнер (если есть) и запускаем новый
-        // || true означает "не падать если контейнера ещё нет"
+        // Останавливаем старый контейнер, запускаем новый.
+        // "|| true" — не падать если контейнера ещё нет (первый запуск).
         // ══════════════════════════════════════════════════════
         stage('Deploy') {
             when {
@@ -119,36 +117,57 @@ pipeline {
 
         // ══════════════════════════════════════════════════════
         // Stage 4: Health Check
-        // Проверяем что приложение реально отвечает на /health
+        //
+        // ПОЧЕМУ docker exec, а не wget/curl с агента?
+        //   Агент docker-builder — это контейнер на Windows.
+        //   Когда он делает wget localhost:8082 — обращается к localhost
+        //   ВНУТРИ своего контейнера, а порт 8082 пробросан на хост Windows,
+        //   а не внутрь агента. Поэтому "Connection refused".
+        //
+        //   Решение: заходим ВНУТРЬ контейнера report-service через docker exec
+        //   и проверяем порт 5000 (внутренний порт приложения).
+        //   Внутри контейнера нет curl/wget, но есть Python — используем urllib.
         //
         // Логика:
         //   10 попыток × 2 секунды = максимум 20 секунд ожидания
-        //   Если успех → сохраняем BUILD_NUMBER в файл
-        //   Если провал → rollback на последнюю успешную версию → FAILED
+        //   Успех → сохраняем BUILD_NUMBER в last_successful_build.txt
+        //   Провал → rollback на последнюю успешную версию → FAILED
         // ══════════════════════════════════════════════════════
         stage('Health Check') {
             when {
                 expression { params.ROLLBACK_ONLY == false }
             }
             steps {
-                echo "🏥 Проверка доступности на порту ${env.CONTAINER_PORT}"
+                echo "🏥 Проверка доступности (через docker exec внутрь контейнера)"
                 script {
                     def healthOk = false
 
                     for (int i = 1; i <= 10; i++) {
+                        // Заходим внутрь контейнера report-service и делаем HTTP запрос
+                        // на внутренний порт 5000 через Python urllib (curl/wget там нет)
                         def exitCode = sh(
-                            // wget -q — тихий режим (без прогресса)
-                            // -O /dev/null — ответ нам не нужен, выбрасываем
-                            // wget возвращает 0 если сервер ответил, 1+ если недоступен
-                            script: "wget -q -O /dev/null http://localhost:${env.CONTAINER_PORT}/health",
-                            returnStatus: true   // не падать при ошибке, а вернуть код выхода
-                        )
+                            script: """
+                                docker exec ${env.CONTAINER_NAME} python3 -c \
+                                "import urllib.request, sys
+try:
+    urllib.request.urlopen('http://localhost:${env.APP_INTERNAL_PORT}/health')
+    sys.exit(0)
+except Exception:
+    sys.exit(1)"
+                            """,
+                            returnStatus: true  // не бросать исключение при ошибке,
+                        )                       // просто вернуть код выхода
 
                         if (exitCode == 0) {
                             healthOk = true
                             echo "✅ Health check пройден с попытки ${i}!"
-                            // wget -q -O - выводит тело ответа в stdout — покажем что вернуло приложение
-                            sh "wget -q -O - http://localhost:${env.CONTAINER_PORT}/health"
+                            // Показываем реальный ответ приложения для лога
+                            sh """
+                                docker exec ${env.CONTAINER_NAME} python3 -c \
+                                "import urllib.request
+resp = urllib.request.urlopen('http://localhost:${env.APP_INTERNAL_PORT}/health')
+print(resp.read().decode())"
+                            """
                             break
                         }
                         echo "⏳ Попытка ${i}/10 неудачна, ждём 2 сек..."
@@ -156,15 +175,14 @@ pipeline {
                     }
 
                     if (healthOk) {
-                        // Сохраняем номер этой успешной сборки для будущего rollback
+                        // Сохраняем номер успешной сборки — он нужен для rollback
                         sh "echo ${env.BUILD_NUMBER} > ${env.LAST_SUCCESSFUL_FILE}"
                         echo "✅ Build ${env.BUILD_NUMBER} сохранён в ${env.LAST_SUCCESSFUL_FILE}"
 
                     } else {
-                        // ── Автоматический rollback ──────────────────────────
+                        // ── Автоматический rollback при провале health check ──
                         echo "❌ Health check провалился — запускаем автоматический rollback"
 
-                        // Сначала убираем сломанный контейнер
                         sh """
                             docker stop ${env.CONTAINER_NAME} 2>/dev/null || true
                             docker rm   ${env.CONTAINER_NAME} 2>/dev/null || true
@@ -176,9 +194,9 @@ pipeline {
                             echo "🔄 Откатываемся к образу: ${lastImage}"
 
                             sh """
-                                # Проверяем что образ существует локально
-                                # --format нужен из-за Docker Desktop (нестандартный вывод docker images)
-                                FOUND=\$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -x '${lastImage}' || true)
+                                # --format нужен из-за Docker Desktop (Windows)
+                                FOUND=\$(docker images --format '{{.Repository}}:{{.Tag}}' \
+                                    | grep -x '${lastImage}' || true)
 
                                 if [ -n "\$FOUND" ]; then
                                     docker run -d \
@@ -191,10 +209,9 @@ pipeline {
                                 fi
                             """
                         } else {
-                            echo "⚠ Файл ${env.LAST_SUCCESSFUL_FILE} не найден — это первая сборка, откатиться некуда"
+                            echo "⚠ Файл ${env.LAST_SUCCESSFUL_FILE} не найден — первая сборка, откатиться некуда"
                         }
 
-                        // Завершаем pipeline как FAILED в любом случае
                         error("❌ Pipeline FAILED: Health check не прошёл")
                     }
                 }
@@ -203,8 +220,8 @@ pipeline {
 
         // ══════════════════════════════════════════════════════
         // Stage 5: Rollback Only
-        // Запускается ТОЛЬКО если ROLLBACK_ONLY = true
-        // Читает last_successful_build.txt и поднимает ту версию
+        // Запускается ТОЛЬКО если ROLLBACK_ONLY = true.
+        // Читает last_successful_build.txt и поднимает ту версию.
         // ══════════════════════════════════════════════════════
         stage('Rollback') {
             when {
@@ -222,7 +239,8 @@ pipeline {
                     echo "🔄 Откатываемся к образу: ${lastImage}"
 
                     sh """
-                        FOUND=\$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -x '${lastImage}' || true)
+                        FOUND=\$(docker images --format '{{.Repository}}:{{.Tag}}' \
+                            | grep -x '${lastImage}' || true)
 
                         if [ -z "\$FOUND" ]; then
                             echo "❌ Образ ${lastImage} не найден локально"
@@ -244,16 +262,13 @@ pipeline {
         }
     }
 
-    // ══════════════════════════════════════════════════════
-    // POST — выполняется всегда после завершения всех stages
-    // ══════════════════════════════════════════════════════
     post {
         always {
             echo "🧹 Cleanup — подчищаем за собой"
             sh "rm -rf DevOps/report-service/venv 2>/dev/null || true"
         }
         success {
-            echo "✅ Pipeline SUCCESS — сборка ${env.BUILD_NUMBER} успешна, приложение доступно на порту ${env.CONTAINER_PORT}"
+            echo "✅ Pipeline SUCCESS — сборка ${env.BUILD_NUMBER} успешна, порт ${env.CONTAINER_PORT}"
         }
         failure {
             echo "❌ Pipeline FAILED — проверьте логи выше"
