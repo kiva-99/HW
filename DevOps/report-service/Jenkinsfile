@@ -137,14 +137,18 @@ pipeline {
 
                     for (int i = 1; i <= 10; i++) {
                         def exitCode = sh(
-                            script: "curl -sf http://localhost:${env.CONTAINER_PORT}/health",
-                            returnStatus: true   // returnStatus: true — не падать при ошибке curl,
-                        )                        // а вернуть код выхода (0 = успех, 1+ = ошибка)
+                            // wget -q — тихий режим (без прогресса)
+                            // -O /dev/null — ответ нам не нужен, выбрасываем
+                            // wget возвращает 0 если сервер ответил, 1+ если недоступен
+                            script: "wget -q -O /dev/null http://localhost:${env.CONTAINER_PORT}/health",
+                            returnStatus: true   // не падать при ошибке, а вернуть код выхода
+                        )
 
                         if (exitCode == 0) {
                             healthOk = true
                             echo "✅ Health check пройден с попытки ${i}!"
-                            sh "curl -s http://localhost:${env.CONTAINER_PORT}/health"
+                            // wget -q -O - выводит тело ответа в stdout — покажем что вернуло приложение
+                            sh "wget -q -O - http://localhost:${env.CONTAINER_PORT}/health"
                             break
                         }
                         echo "⏳ Попытка ${i}/10 неудачна, ждём 2 сек..."
