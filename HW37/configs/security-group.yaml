@@ -1,0 +1,70 @@
+id: enphjtt8rsthpkhent15
+folder_id: b1gcijdrjlf3m935prl2
+created_at: "2026-03-14T08:42:10Z"
+name: default-sg-enpnkes38osg7vp076d5
+description: Default security group for network
+network_id: enpnkes38osg7vp076d5
+status: ACTIVE
+rules:
+  - id: enp46pi530tei3urptb3
+    description: HTTP (веб-сервер)
+    direction: INGRESS
+    ports:
+      from_port: "80"
+      to_port: "80"
+    protocol_name: TCP
+    protocol_number: "6"
+    cidr_blocks:
+      v4_cidr_blocks:
+        - 0.0.0.0/0
+  - id: enpkt49uleqnrrj0grlt
+    direction: EGRESS
+    protocol_name: ANY
+    protocol_number: "-1"
+    cidr_blocks:
+      v4_cidr_blocks:
+        - 0.0.0.0/0
+  - id: enpuo1sop9i4kgpmlg1r
+    direction: INGRESS
+    ports:
+      from_port: "22"
+      to_port: "22"
+    protocol_name: TCP
+    protocol_number: "6"
+    cidr_blocks:
+      v4_cidr_blocks:
+        - 0.0.0.0/0
+  - id: enpkggr45tvngbb2q62b
+    direction: INGRESS
+    ports:
+      from_port: "443"
+      to_port: "443"
+    protocol_name: TCP
+    protocol_number: "6"
+    cidr_blocks:
+      v4_cidr_blocks:
+        - 0.0.0.0/0
+  - id: enpkd63c0hvrkc9sqvb8
+    direction: INGRESS
+    protocol_name: ICMP
+    protocol_number: "1"
+    cidr_blocks:
+      v4_cidr_blocks:
+        - 0.0.0.0/0
+  - id: enpueu2q0m5bhehtqbku
+    direction: INGRESS
+    ports:
+      from_port: "30080"
+      to_port: "30080"
+    protocol_name: TCP
+    protocol_number: "6"
+    predefined_target: loadbalancer_healthchecks
+  - id: enps6lkue52j2upi5e66
+    direction: EGRESS
+    protocol_name: ANY
+    protocol_number: "-1"
+    cidr_blocks:
+      v4_cidr_blocks:
+        - 10.128.0.0/16
+default_for_network: true
+

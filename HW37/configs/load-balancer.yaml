@@ -1,0 +1,24 @@
+id: ds7td3na9phfosb7tl0a
+name: hw37-load-balancer
+folder_id: b1gcijdrjlf3m935prl2
+status: ACTIVE
+network_id: enpnkes38osg7vp076d5
+listeners:
+  - name: listener1
+    endpoints:
+      - addresses:
+          - external_ipv4_address:
+              address: 158.160.239.87
+        ports:
+          - "80"
+    http:
+      handler:
+        http_router_id: ds7kv2qbvsglrnj0cjbd
+allocation_policy:
+  locations:
+    - zone_id: ru-central1-a
+      subnet_id: e9b1etf7pjdo6dlm96o4
+security_group_ids:
+  - enphjtt8rsthpkhent15
+created_at: "2026-03-29T17:37:01.086849388Z"
+

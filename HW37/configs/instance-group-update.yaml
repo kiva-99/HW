@@ -1,0 +1,32 @@
+instance_template:
+  name: hw35-template-with-nginx
+  platform_id: standard-v3
+  resources_spec:
+    memory: "1073741824"
+    cores: "2"
+    core_fraction: "20"
+  boot_disk_spec:
+    mode: READ_WRITE
+    disk_spec:
+      type_id: network-hdd
+      size: "10737418240"
+      image_id: fd8rnq92aj5v7sgi91e8
+  network_interface_specs:
+    - network_id: enpnkes38osg7vp076d5
+      subnet_ids:
+        - e9b1etf7pjdo6dlm96o4
+      nat_ip_version: IPV4
+      security_group_ids:
+        - enphjtt8rsthpkhent15
+  metadata:
+    user-data: |
+      #cloud-config
+      package_update: true
+      packages:
+        - nginx
+      runcmd:
+        - systemctl enable nginx
+        - systemctl start nginx
+        - echo "<h1>HW37 LB Test - \$(hostname)</h1>" > /var/www/html/index.html
+  scheduling_policy:
+    preemptible: true

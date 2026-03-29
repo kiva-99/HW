@@ -1,0 +1,19 @@
+id: ds7kv2qbvsglrnj0cjbd
+name: hw37-http-router
+folder_id: b1gcijdrjlf3m935prl2
+virtual_hosts:
+  - name: vh1
+    authority:
+      - typespeedarena.ru
+    routes:
+      - name: main-route
+        http:
+          match:
+            path:
+              prefix_match: /
+          route:
+            backend_group_id: ds7kskia9953ghc5646e
+            auto_host_rewrite: false
+    route_options: {}
+created_at: "2026-03-29T17:26:12.650853443Z"
+

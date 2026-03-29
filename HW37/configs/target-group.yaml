@@ -1,0 +1,11 @@
+id: ds73dvq9jjukqhj3rb4t
+name: hw37-target-group
+description: Target group for HW37 Load Balancer
+folder_id: b1gcijdrjlf3m935prl2
+targets:
+  - ip_address: 10.128.0.18
+    subnet_id: e9b1etf7pjdo6dlm96o4
+  - ip_address: 10.128.0.11
+    subnet_id: e9b1etf7pjdo6dlm96o4
+created_at: "2026-03-29T15:46:32.531275006Z"
+

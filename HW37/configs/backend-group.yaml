@@ -1,0 +1,23 @@
+id: ds7kskia9953ghc5646e
+name: hw37-backend-group
+description: Backend group for HW37 Load Balancer
+folder_id: b1gcijdrjlf3m935prl2
+http:
+  backends:
+    - name: backend1
+      backend_weight: "1"
+      load_balancing_config: {}
+      port: "80"
+      target_groups:
+        target_group_ids:
+          - ds73dvq9jjukqhj3rb4t
+      healthchecks:
+        - timeout: 3s
+          interval: 1s
+          healthy_threshold: "2"
+          unhealthy_threshold: "3"
+          healthcheck_port: "80"
+          http:
+            path: /
+created_at: "2026-03-29T17:23:20.396455357Z"
+

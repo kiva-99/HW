@@ -1,0 +1,48 @@
+id: cl1hkibntfggv5qcemfc
+folder_id: b1gcijdrjlf3m935prl2
+created_at: "2026-03-19T13:18:22.708Z"
+name: hw35-autoscale-group
+description: Группа для автоскейлинга по CPU
+instance_template:
+  platform_id: standard-v3
+  resources_spec:
+    memory: "1073741824"
+    cores: "2"
+    core_fraction: "20"
+  boot_disk_spec:
+    mode: READ_WRITE
+    disk_spec:
+      type_id: network-hdd
+      size: "10737418240"
+      image_id: fd8rnq92aj5v7sgi91e8
+  network_interface_specs:
+    - network_id: enpnkes38osg7vp076d5
+      subnet_ids:
+        - e9b1etf7pjdo6dlm96o4
+      primary_v4_address_spec:
+        one_to_one_nat_spec:
+          ip_version: IPV4
+      security_group_ids:
+        - enphjtt8rsthpkhent15
+  scheduling_policy:
+    preemptible: true
+scale_policy:
+  fixed_scale:
+    size: "1"
+deploy_policy:
+  max_unavailable: "1"
+  max_deleting: "1"
+  max_creating: "1"
+  startup_duration: 60s
+  strategy: PROACTIVE
+allocation_policy:
+  zones:
+    - zone_id: ru-central1-a
+load_balancer_state: {}
+managed_instances_state:
+  target_size: "1"
+  running_actual_count: "1"
+service_account_id: aje5qjelspl42t0bt197
+status: ACTIVE
+application_load_balancer_state: {}
+
