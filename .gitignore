@@ -1,0 +1,35 @@
+﻿# Yandex Cloud config
+.yandex-cloud/
+
+# AWS credentials
+.aws/credentials
+.aws/config
+
+# Private keys
+*.pem
+*.key
+*.ppk
+
+# Environment files
+*.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# ZIP archives
+*.zip
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -20,7 +20,7 @@ s3_client = boto3.client(
 )
 
 # Имя существующего бакета
-BUCKET_NAME = 'hw38-demo-50499'
+BUCKET_NAME = 'hw38-demo-*****'
 
 def test_connection():
     """Проверяем подключение к S3"""

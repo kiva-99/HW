@@ -1,0 +1,13 @@
+id: a1sadadjbl28k9epj1ib
+folder_id: b1gcijdrjlf3m935prl2
+created_at: "2026-04-04T16:24:18.751Z"
+name: hw39-cdn-monitoring-timer
+rule:
+  timer:
+    cron_expression: 0 */3 ? * * *
+    invoke_function_with_retry:
+      function_id: d4e2o2mcuvpcltg0ab5m
+      function_tag: $latest
+      service_account_id: aje0lsie3loedsgnp9gh
+status: ACTIVE
+

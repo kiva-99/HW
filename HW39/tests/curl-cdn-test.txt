@@ -1,0 +1,15 @@
+HTTP/1.1 200 OK
+Server: nginx
+Date: Sat, 04 Apr 2026 18:22:27 GMT
+Content-Type: text/html
+Content-Length: 556
+Connection: keep-alive
+Etag: "7a003f0a7603d87b7bd75e79618f9e55"
+Last-Modified: Sat, 04 Apr 2026 10:47:14 GMT
+X-Request-Id: bbf017f8f712d0d9
+Access-Control-Allow-Origin: *
+Cache-Host: yccdn-m9-03.yccdn.cloud.yandex.net
+Cache-Status: HIT
+Cache-Control: max-age=3600
+Accept-Ranges: bytes
+
