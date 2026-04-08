@@ -130,17 +130,20 @@ yc dns zone add-records \
 
 #### Логика функции
 ```python
-1. Получение IAM-токена из метаданных функции
+1. Получение IAM-токена из метаданных функции (169.254.169.254)
 2. Запрос к Monitoring API:
    POST /monitoring/v2/data/read?folderId=<FOLDER_ID>
    Body: {
-     "query": '{service="cdn", resource_id="<CDN_ID>"}',
+     "query": 'edge.requests{service="yccdn", resource="<CDN_ID>"}',  # ✅ Правильный синтаксис
      "fromTime": "...",
      "toTime": "..."
    }
-3. Агрегация метрик: requests_total, bandwidth, cache_hit/miss
+3. Агрегация метрики edge.requests (DGAUGE):
+   - Фильтрация числовых значений (исключение "NaN")
+   - Расчёт: total = sum(values) × 180 (интервал между точками ~3 мин)
 4. Формирование сжатого JSON-отчёта (~125 байт)
-5. Сохранение в S3: s3://hw39-cdn-site-8945/cdn-reports/cdn-monitoring-YYYY-MM-DD.json
+5. Сохранение в S3 в формате JSONL (append):
+   s3://hw39-cdn-site-8945/cdn-reports/cdn-monitoring-YYYY-MM-DD.jsonl
 ```
 
 **Пример отчёта:**
@@ -183,19 +186,31 @@ aws s3 cp s3://hw39-cdn-site-8945/cdn-reports/cdn-monitoring-2026-04-04.json - -
 
 ## ⚠️ Известные ограничения
 
-### Метрики CDN в Monitoring API
-На момент тестирования функция возвращает пустые значения метрик (`req: 0, bw: 0, ...`). Это связано с **особенностью Yandex Cloud**:
+### Формат запроса к Monitoring API
+Для корректного получения метрик Cloud CDN необходимо соблюдать синтаксис:
 
-> **Шард для хранения метрик CDN** создаётся автоматически в Monitoring API только после появления данных. Для новых CDN-ресурсов это может занять **24-48 часов** после начала генерации трафика.
+| Компонент | Значение | Примечание |
+|-----------|----------|------------|
+| **Имя метрики** | `edge.requests`, `edge.bytes_sent` | Обязательно перед `{}` |
+| **service** | `yccdn` | Не `"cdn"` — идентификатор сервиса в Monitoring |
+| **Метка ресурса** | `resource="<ID>"` | Не `resource_id` — специфика CDN |
+| **folderId** | В query-параметрах URL | Не в теле запроса |
 
-**Что уже работает:**
-- ✅ Функция запускается без ошибок (`statusCode: 200`)
-- ✅ Запрос к Monitoring API формируется корректно (правильный синтаксис `query`, `folderId` в URL)
-- ✅ Отчёты сохраняются в Object Storage
-- ✅ Формат отчёта соответствует требованиям (сжатый JSON, ~125 байт)
+Пример рабочего запроса:
+```bash
+edge.requests{service="yccdn", resource="bc8rjft7hd6zxa3unmtt"}
 
-**После появления шарда** функция автоматически начнёт получать реальные метрики без изменений в коде.
-
+Агрегация DGAUGE-метрик
+Метрика edge.requests имеет тип DGAUGE (запросы в секунду).
+Для получения общего числа запросов за период применяется интегрирование:
+total_requests = Σ(rate_i) × interval_seconds
+Где interval_seconds ≈ 180 (интервал между точками данных в Monitoring).
+Формат логов: JSONL
+Отчёты сохраняются в формате JSON Lines (.jsonl), где каждая строка — отдельный валидный JSON. Это позволяет:
+Добавлять новые записи без перезаписи всего файла
+Читать лог построчно, не загружая весь объём в память
+Легко парсить в bash/Python: while read line; do echo "$line" | jq ...; done
+```
 ---
 
 ## 💰 Оценка стоимости
