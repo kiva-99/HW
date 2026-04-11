@@ -1,0 +1,91 @@
+вывод после изменения инициированного через terraform 
+###PS D:\docker-projects\hw\terraform HW> terraform fmt -recursive
+main.tf
+###PS D:\docker-projects\hw\terraform HW> terraform validate
+Success! The configuration is valid.
+
+###PS D:\docker-projects\hw\terraform HW> terraform plan
+yandex_vpc_network.net: Refreshing state... [id=enpo97c65fm8aa12m3a3]
+yandex_vpc_subnet.subnet: Refreshing state... [id=e9bg48ijtd56irh19o8e]
+yandex_compute_instance.vm: Refreshing state... [id=fhmvetv5v0r446jqoe1k]
+
+Terraform used the selected providers to generate the following execution     
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # yandex_compute_instance.vm will be updated in-place
+  ~ resource "yandex_compute_instance" "vm" {
+      + allow_stopping_for_update = true
+        id                        = "fhmvetv5v0r446jqoe1k"
+        name                      = "lesson-vm"
+        # (15 unchanged attributes hidden)
+
+      ~ resources {
+          ~ core_fraction = 100 -> 20
+          ~ memory        = 2 -> 1
+            # (2 unchanged attributes hidden)
+        }
+
+      ~ scheduling_policy {
+          ~ preemptible = false -> true
+        }
+
+        # (4 unchanged blocks hidden)
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+
+───────────────────────────────────────────────────────────────────────────── 
+
+Note: You didn't use the -out option to save this plan, so Terraform can't    
+guarantee to take exactly these actions if you run "terraform apply" now.     
+###PS D:\docker-projects\hw\terraform HW> terraform apply
+yandex_vpc_network.net: Refreshing state... [id=enpo97c65fm8aa12m3a3]
+yandex_vpc_subnet.subnet: Refreshing state... [id=e9bg48ijtd56irh19o8e]
+yandex_compute_instance.vm: Refreshing state... [id=fhmvetv5v0r446jqoe1k]
+
+Terraform used the selected providers to generate the following execution     
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # yandex_compute_instance.vm will be updated in-place
+  ~ resource "yandex_compute_instance" "vm" {
+      + allow_stopping_for_update = true
+        id                        = "fhmvetv5v0r446jqoe1k"
+        name                      = "lesson-vm"
+        # (15 unchanged attributes hidden)
+
+      ~ resources {
+          ~ core_fraction = 100 -> 20
+          ~ memory        = 2 -> 1
+            # (2 unchanged attributes hidden)
+        }
+
+      ~ scheduling_policy {
+          ~ preemptible = false -> true
+        }
+
+        # (4 unchanged blocks hidden)
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+
+Do you want to perform these actions?
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+s elapsed]
+yandex_compute_instance.vm: Still modifying... [id=fhmvetv5v0r446jqoe1k, 00m40s elapsed]
+yandex_compute_instance.vm: Still modifying... [id=fhmvetv5v0r446jqoe1k, 00m50s elapsed]
+yandex_compute_instance.vm: Still modifying... [id=fhmvetv5v0r446jqoe1k, 01m00s elapsed]
+yandex_compute_instance.vm: Modifications complete after 1m5s [id=fhmvetv5v0r446jqoe1k]
+
+Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+PS D:\docker-projects\hw\terraform HW>

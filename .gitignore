@@ -33,3 +33,14 @@ logs/
 # OS files
 .DS_Store
 Thumbs.db
+
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+key.json
+*.pem
+*.log
+terraform.rc
+.terraformrc
