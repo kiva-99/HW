@@ -12,7 +12,7 @@ jobs:
     env: 
       YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
       YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-      YC_SERVICE_ACCOUNT_KEY_FILE: /tmp/key.json
+      YC_SERVICE_ACCOUNT_KEY_FILE: ${{ github.workspace }}/key.json
 
     defaults:
       run: 
@@ -28,12 +28,13 @@ jobs:
 
       - name: prepare yc creads
         run: |
-         echo '${{ secrets.YC_SA_KEY_JSON_ID }}' > /tmp/key.json
+         echo '${{ secrets.YC_SA_KEY_JSON_ID }}' > ${{ github.workspace }}/key.json
 
 #      - name: export s3 creads
 #        run: |
 #         echo '' > /tmp/key.json     
 #
+
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
 

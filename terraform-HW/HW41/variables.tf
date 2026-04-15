@@ -5,10 +5,15 @@
 # -----------------------------------------------------------------------------
 # Аутентификация Yandex Cloud
 # -----------------------------------------------------------------------------
-variable "yc_token" {
-  description = "IAM token для Yandex Cloud"
+#variable "yc_token" {
+#  description = "IAM token для Yandex Cloud"
+#  type        = string
+#  sensitive   = true
+#}
+
+variable "sa_key_file" {
+  description = "Путь к файлу ключа сервисного аккаунта"
   type        = string
-  sensitive   = true
 }
 
 variable "yc_cloud_id" {
