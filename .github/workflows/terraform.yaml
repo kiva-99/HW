@@ -30,7 +30,7 @@ jobs:
         run: echo '${{ secrets.YC_SA_KEY_JSON_ID }}' > ${{ github.workspace }}/terraform-HW/HW41/key.json
 
       - name: key_debag
-        run:  ls -l ${{ github.workspace }}/key.json
+        run:  ls -l ${{ github.workspace }}/terraform-HW/HW41/key.json
 
 #      - name: export s3 creads
 #        run: |
