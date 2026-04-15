@@ -27,8 +27,10 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: prepare yc creads
-        run: |
-         echo '${{ secrets.YC_SA_KEY_JSON_ID }}' > ${{ github.workspace }}/key.json
+        run: echo '${{ secrets.YC_SA_KEY_JSON_ID }}' > ${{ github.workspace }}/key.json
+
+      - name: key_debag
+        run:  ls -l ${{ github.workspace }}/key.json
 
 #      - name: export s3 creads
 #        run: |
