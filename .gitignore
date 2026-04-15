@@ -1,20 +1,70 @@
-﻿# Yandex Cloud config
+﻿# =========================
+# Yandex Cloud / AWS creds
+# =========================
 .yandex-cloud/
-
-# AWS credentials
 .aws/credentials
 .aws/config
 
-# Private keys
+# =========================
+# Terraform
+# =========================
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config
+terraform.rc
+.terraformrc
+
+# =========================
+# Variables (SENSITIVE)
+# =========================
+terraform.tfvars
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Example files (keep them)
+!terraform.tfvars.example
+
+# =========================
+# Local plugin cache
+# =========================
+terraform.d/
+.terraform.d/
+
+# =========================
+# Keys / Secrets
+# =========================
+key.json
 *.pem
 *.key
 *.ppk
+*.pfx
+*.crt
 
+# =========================
 # Environment files
+# =========================
 *.env
 .env.local
 
-# Python
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Python (если используешь)
+# =========================
 __pycache__/
 *.pyc
 *.pyo
@@ -23,24 +73,21 @@ __pycache__/
 env/
 venv/
 
-# ZIP archives
-*.zip
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
 
-# Logs
-*.log
-logs/
-
-# OS files
+# =========================
+# OS junk
+# =========================
 .DS_Store
 Thumbs.db
 
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-!terraform.tfvars.example
-key.json
-*.pem
-*.log
-terraform.rc
-.terraformrc
+# =========================
+# Archives
+# =========================
+*.zip
+*.tar
+*.gz
