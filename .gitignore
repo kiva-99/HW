@@ -25,11 +25,17 @@ terraform.rc
 .terraformrc
 
 # =========================
-# Variables (SENSITIVE)
+# Variables (SENSITIVE by default)
 # =========================
-terraform.tfvars
-*.auto.tfvars
-*.auto.tfvars.json
+**/terraform.tfvars
+**/*.auto.tfvars
+**/*.auto.tfvars.json
+
+# Allow only safe shared tfvars for HW41
+!terraform-HW/HW41/terraform.tfvars
+
+# Example files (keep them)
+!terraform.tfvars.example
 
 # Example files (keep them)
 !terraform.tfvars.example
