@@ -51,5 +51,5 @@ jobs:
         run: terraform validate
 
       - name: Terraform plan
-        if: github.event_name == 'pull_request'
-        run: terraform plan -no-color
+        #if: github.event_name == 'pull_request'
+        run: terraform plan -no-color -input=false
