@@ -6,23 +6,17 @@ on:
     branches: [ main ]
 
 jobs:
-  plan:
+  plan: 
     name: terraform_plan
     runs-on: ubuntu-latest
-
-    env:
+    env: 
       YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
       YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-
-      # Для provider "yandex"
+       # Для provider "yandex"
       YC_SERVICE_ACCOUNT_KEY_FILE: ${{ github.workspace }}/terraform-HW/HW41/key.json
 
-      # Для backend "s3" (YC Object Storage)
-      AWS_ACCESS_KEY_ID: ${{ secrets.YC_BACKEND_ACCESS_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_BACKEND_SECRET_KEY }}
-
     defaults:
-      run:
+      run: 
         shell: bash
         working-directory: terraform-HW/HW41
 
@@ -30,16 +24,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Terraform
+      - name: Setup terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Prepare YC service account key
-        run: |
-          echo '${{ secrets.YC_SA_KEY_JSON_ID }}' > key.json
-          ls -l key.json
+      - name: prepare yc creads
+        run: echo '${{ secrets.YC_SA_KEY_JSON_ID }}' > ${{ github.workspace }}/terraform-HW/HW41/key.json
 
-      - name: Terraform version
-        run: terraform version
+      - name: key_debag
+        run:  ls -l ${{ github.workspace }}/terraform-HW/HW41/key.json
+
+#      - name: export s3 creads
+#        run: |
+#         echo '' > /tmp/key.json     
+#
 
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
@@ -47,9 +44,6 @@ jobs:
       - name: Terraform init
         run: terraform init
 
-      - name: Terraform validate
-        run: terraform validate
-
       - name: Terraform plan
         if: github.event_name == 'pull_request'
-        run: terraform plan -no-color
+        run: terraform plan
