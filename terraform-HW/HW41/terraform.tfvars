@@ -1,5 +1,5 @@
 
-sa_key_file = "key.json"
+sa_key_file  = "key.json"
 yc_cloud_id  = "b1g7n8p29nt9r3i5e3m5"
 yc_folder_id = "b1ga0ad79qngmcfham7u"
 yc_zone      = "ru-central1-a"
