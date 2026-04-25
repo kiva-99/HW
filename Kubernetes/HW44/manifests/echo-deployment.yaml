@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-deployment
+  labels:
+    app: echo-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo-demo
+  template:
+    metadata:
+      labels:
+        app: echo-demo
+    spec:
+      containers:
+        - name: echo
+          image: hashicorp/http-echo:1.0
+          args:
+            - "-text=Hello from HW44 second app"
+          ports:
+            - containerPort: 5678
