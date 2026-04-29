@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hw45-nginx-pod
+  namespace: hw45-dev
+  labels:
+    app: hw45-nginx
+    homework: hw45
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      ports:
+        - containerPort: 80

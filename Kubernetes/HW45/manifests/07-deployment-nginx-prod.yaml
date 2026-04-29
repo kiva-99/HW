@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hw45-nginx-deployment
+  namespace: hw45-prod
+  labels:
+    app: hw45-nginx-prod
+    homework: hw45
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hw45-nginx-prod
+  template:
+    metadata:
+      labels:
+        app: hw45-nginx-prod
+        homework: hw45
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80

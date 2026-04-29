@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hw45-prod
+  labels:
+    environment: prod
+    homework: hw45

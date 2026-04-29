@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: hw45-echo-rs
+  namespace: hw45-test
+  labels:
+    app: hw45-echo
+    homework: hw45
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hw45-echo
+  template:
+    metadata:
+      labels:
+        app: hw45-echo
+        homework: hw45
+    spec:
+      containers:
+        - name: echo
+          image: hashicorp/http-echo:1.0
+          args:
+            - "-text=Hello from HW45 ReplicaSet"
+          ports:
+            - containerPort: 5678
