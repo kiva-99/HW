@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hw46-nginx-loadbalancer
+  namespace: hw46
+spec:
+  type: LoadBalancer
+  selector:
+    app: hw46-nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

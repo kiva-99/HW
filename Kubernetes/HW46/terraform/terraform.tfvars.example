@@ -1,0 +1,22 @@
+cloud_id    = "b1g7n8p29nt9r3i5e3m5"
+folder_id   = "b1ga0ad79qngmcfham7u"
+cloud_zone  = "ru-central1-a"
+
+# Put real path in terraform.tfvars, not here.
+sa_key_file = "D:/docker-projects/hw/Kubernetes/HW46/terraform/key.json"
+
+# Replace with your real public IP, for example:
+# trusted_ip_cidr = "80.251.62.139/32"
+trusted_ip_cidr = "YOUR_PUBLIC_IP/32"
+
+cluster_name    = "hw46-k8s-cluster"
+network_name    = "hw46-k8s-network"
+subnet_name     = "hw46-k8s-subnet"
+subnet_cidr     = ["10.46.0.0/24"]
+
+k8s_version     = "1.29"
+node_group_name = "hw46-k8s-node-group"
+node_count      = 1
+node_cores      = 2
+node_memory     = 2
+node_disk_size  = 24

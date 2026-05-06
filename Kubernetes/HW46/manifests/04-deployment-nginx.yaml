@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hw46-nginx
+  namespace: hw46
+  labels:
+    app: hw46-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hw46-nginx
+  template:
+    metadata:
+      labels:
+        app: hw46-nginx
+    spec:
+      serviceAccountName: hw46-sa
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
