@@ -1,0 +1,94 @@
+services:
+  mysql-server:
+    image: mysql:8.0
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_bin
+      - --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "CHANGE_ME_ROOT_PASSWORD"
+      MYSQL_DATABASE: "zabbix"
+      MYSQL_USER: "zabbix"
+      MYSQL_PASSWORD: "CHANGE_ME_ZABBIX_DB_PASSWORD"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "zabbix", "-pCHANGE_ME_ZABBIX_DB_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:alpine-7.0-latest
+    ports:
+      - "10051:10051"
+    restart: unless-stopped
+    volumes:
+      - zabbix_export:/var/lib/zabbix/export
+    environment:
+      DB_SERVER_HOST: mysql-server
+      MYSQL_DATABASE: "zabbix"
+      MYSQL_USER: "zabbix"
+      MYSQL_PASSWORD: "CHANGE_ME_ZABBIX_DB_PASSWORD"
+      MYSQL_ROOT_PASSWORD: "CHANGE_ME_ROOT_PASSWORD"
+    depends_on:
+      mysql-server:
+        condition: service_healthy
+
+  zabbix-frontend:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-7.0-latest
+    ports:
+      - "8083:8080"  # ⬅️ ИЗМЕНЕНО: было 8080:8080 (порт занят), теперь 8083
+    restart: unless-stopped
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: mysql-server
+      MYSQL_DATABASE: "zabbix"
+      MYSQL_USER: "zabbix"
+      MYSQL_PASSWORD: "CHANGE_ME_ZABBIX_DB_PASSWORD"
+      PHP_TZ: "Europe/Minsk"
+    depends_on:
+      - zabbix-server
+
+  zabbix-agent:
+    image: zabbix/zabbix-agent2:alpine-7.0-latest
+    ports:
+      - "10050:10050"
+    restart: unless-stopped
+    privileged: true
+    user: "0:0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      ZBX_HOSTNAME: "Zabbix server"
+      ZBX_SERVER_HOST: "zabbix-server"
+      ZBX_PLUGINS_DOCKER_OPTIONS_FILTERS: "label=zabbix.monitor=true"
+    depends_on:
+      - zabbix-server
+  
+  # Тестовое приложение 1: Nginx
+  demo-web-nginx:
+    image: nginx:alpine
+    ports:
+      - "8082:80"
+    labels:
+      - "zabbix.monitor=true"
+    volumes:
+      - ./nginx-status.conf:/etc/nginx/conf.d/status.conf:ro
+    restart: unless-stopped
+
+  # Тестовое приложение 2: PostgreSQL
+  demo-db-postgres:
+    image: postgres:15-alpine
+    labels:
+      - "zabbix.monitor=true"
+    environment:
+      POSTGRES_USER: "zbx_monitor"
+      POSTGRES_PASSWORD: "CHANGE_ME_POSTGRES_PASSWORD"
+      POSTGRES_DB: "demo_application"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  zabbix_export:
