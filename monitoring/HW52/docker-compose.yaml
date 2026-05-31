@@ -1,0 +1,126 @@
+networks:
+  elk-net:
+    driver: bridge
+
+volumes:
+  es-data:
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.4.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - elk-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:$$ELASTIC_PASSWORD -s http://localhost:9200/_cluster/health | grep -q 'status'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  setup:
+    image: curlimages/curl:latest
+    container_name: elk_setup
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_SYSTEM_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+      - LOGSTASH_INTERNAL_PASSWORD=${LOGSTASH_INTERNAL_PASSWORD}
+    networks:
+      - elk-net
+    command: >
+      sh -c '
+        echo "Setting kibana_system password...";
+        curl -s -u elastic:$$ELASTIC_PASSWORD -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" -H "Content-Type: application/json" -d "{\"password\":\"$$KIBANA_SYSTEM_PASSWORD\"}";
+        echo "";
+        echo "Creating logstash_writer role...";
+        curl -s -u elastic:$$ELASTIC_PASSWORD -X PUT "http://elasticsearch:9200/_security/role/logstash_writer" -H "Content-Type: application/json" -d "{\"cluster\":[\"monitor\",\"manage_index_templates\"],\"indices\":[{\"names\":[\"docker-logs-*\"],\"privileges\":[\"create_index\",\"create\",\"write\",\"index\",\"manage\"]}]}";
+        echo "";
+        echo "Creating logstash_internal user...";
+        curl -s -u elastic:$$ELASTIC_PASSWORD -X POST "http://elasticsearch:9200/_security/user/logstash_internal" -H "Content-Type: application/json" -d "{\"password\":\"$$LOGSTASH_INTERNAL_PASSWORD\",\"roles\":[\"logstash_writer\"],\"full_name\":\"Internal Logstash User\"}";
+        echo "";
+        echo "Setup completed";
+      '
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.4.1
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    networks:
+      - elk-net
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:9.4.1
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "5044:5044"
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+      - LOGSTASH_USERNAME=logstash_internal
+      - LOGSTASH_PASSWORD=${LOGSTASH_INTERNAL_PASSWORD}
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    networks:
+      - elk-net
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.4.1
+    container_name: filebeat
+    user: root
+    command: ["--strict.perms=false"]
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      logstash:
+        condition: service_started
+    networks:
+      - elk-net
+
+  web_nginx:
+    image: nginx:alpine
+    container_name: web_nginx
+    ports:
+      - "8088:80"
+    networks:
+      - elk-net
+
+  app_python:
+    image: python:alpine
+    container_name: app_python
+    command: >
+      python -c "
+      import time, json, random;
+      status_list = ['INFO', 'WARNING', 'ERROR'];
+      msg_list = ['User login success', 'DB connection timeout', 'File not found', 'API request processed'];
+      while True:
+          print(json.dumps({'level': random.choice(status_list), 'message': random.choice(msg_list), 'app': 'payment-gateway'}), flush=True);
+          time.sleep(3);
+      "
+    networks:
+      - elk-net
